@@ -1,0 +1,213 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Manager Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ===== ROOT VARIABLES (Copied from your dashboard) ===== */
+        :root {
+            --primary: #1a1a2e;
+            --secondary: #16213e;
+            --accent: #00d4ff;
+            --accent-2: #0099ff;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0c3;
+            --border-color: #2d3561;
+            --card-bg: #0f1621;
+            --danger: #ff5252;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            /* Use the same gradient background from your dashboard */
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            /* Styled like .card-premium */
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            /* Add the slide-in animation from your dashboard */
+            animation: slideIn 0.5s ease forwards;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header .icon {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 0.75rem;
+        }
+
+        .login-header h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .login-header p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group .icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+
+        .input-field {
+            /* Styled like .search-box */
+            width: 100%;
+            padding: 0.85rem 1rem 0.85rem 2.75rem; /* Padding for the icon */
+            background: var(--secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            /* Focus style from .search-box:focus */
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .input-field:focus + .icon {
+            color: var(--accent);
+        }
+
+        /* Error Message Styling */
+        .error-message {
+            background: rgba(255, 82, 82, 0.15);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        /* Button style from .btn-primary */
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+            border: none;
+            color: var(--primary) !important; /* Dark text on light button */
+            padding: 0.85rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 212, 255, 0.3);
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        
+        .login-footer a {
+            color: var(--accent-2);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animation from your dashboard */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="login-header">
+            <div class="icon"><i class="fas fa-chart-line"></i></div>
+            <h2> Login</h2>
+            <p>Welcome to the BILLING</p>
+        </div>
+
+        <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+
+            {% if error %}
+                <div class="error-message">
+                    <i class="fas fa-exclamation-triangle"></i> {{ error }}
+                </div>
+            {% endif %}
+
+            <div class="input-group">
+                <input type="text" name="username" class="input-field" placeholder="Username" required>
+                <i class="icon fas fa-user"></i>
+            </div>
+
+            <div class="input-group">
+                <input type="password" name="password" class="input-field" placeholder="Password" required>
+                <i class="icon fas fa-lock"></i>
+            </div>
+
+            <button type="submit" class="btn-primary">Login</button>
+        </form>
+
+        <div class="login-footer">
+            <a href="#">Forgot Password?</a>
+        </div>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add User | Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #f3f3f3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        form {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        input, select {
+            margin: 5px 0;
+            padding: 8px;
+            width: 250px;
+        }
+        button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <form method="post" action="{% url 'add_user' %}">
+
+        {% csrf_token %}
+        <h2>Add User</h2>
+        
+        {% if success %}
+            <p style="color:green">{{ success }}</p>
+        {% endif %}
+        {% if error %}
+            <p style="color:red">{{ error }}</p>
+        {% endif %}
+
+        <label>Username:</label><br>
+        <input type="text" name="username" required><br>
+
+        <label>Password:</label><br>
+        <input type="password" name="password" required><br>
+
+        <label>Role:</label><br>
+        <select name="role" required>
+            <option value="">--Select Role--</option>
+            <option value="manager">Manager</option>
+            <option value="cashier">Cashier</option>
+        </select><br><br>
+
+        <button type="submit">Add User</button>
+        <br><br>
+       <a href="{% url 'admin_dashboard' %}"> back to Dashboard</a>
+    </form>
+</body>
+</html>

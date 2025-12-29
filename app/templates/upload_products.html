@@ -1,0 +1,12 @@
+<h2>Upload Products JSON</h2>
+
+<form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="json_file" accept=".json" required>
+    <br><br>
+    <button type="submit">Upload</button>
+</form>
+
+{% if msg %}
+    <p style="color: green;">{{ msg }}</p>
+{% endif %}

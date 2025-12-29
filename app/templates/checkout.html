@@ -1,0 +1,372 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | Finalize Bill</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <style>
+        /* ... Keep your existing CSS exactly as it is ... */
+        :root {
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --primary: #4f46e5; /* Indigo */
+            --primary-hover: #4338ca;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        /* Paste the rest of your CSS here... */
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-body); color: var(--text-main); margin: 0; padding: 20px; min-height: 100vh; }
+        .checkout-container { max-width: 1100px; margin: 0 auto; }
+        .checkout-header { display: flex; align-items: center; margin-bottom: 30px; gap: 20px; }
+        .back-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: white; color: var(--text-main); border: 1px solid var(--border); border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9rem; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .back-btn:hover { background: #f9fafb; transform: translateX(-2px); }
+        .checkout-header h2 { margin: 0; font-size: 1.5rem; font-weight: 700; }
+        .main-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 30px; }
+        @media (max-width: 768px) { .main-grid { grid-template-columns: 1fr; } }
+        .card { background: var(--bg-card); border-radius: 16px; box-shadow: var(--shadow); padding: 30px; border: 1px solid var(--border); }
+        .card-title { margin: 0 0 20px 0; font-size: 1.1rem; font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .card-title i { color: var(--primary); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.9rem; font-weight: 500; margin-bottom: 8px; color: var(--text-main); }
+        .input-wrapper { position: relative; display: flex; align-items: center; }
+        .input-wrapper i { position: absolute; left: 14px; color: var(--text-muted); pointer-events: none; }
+        .form-control { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem; font-family: 'Inter', sans-serif; transition: border-color 0.2s, box-shadow 0.2s; outline: none; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        #customer-search-status { font-size: 0.9rem; padding: 10px 12px; border-radius: 6px; margin-top: -10px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity 0.3s; }
+        #customer-search-status.visible { opacity: 1; }
+        #customer-search-status.found { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        #customer-search-status.not-found { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+        .payment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 30px; }
+        .pay-btn { background: white; border: 2px solid var(--border); border-radius: 12px; padding: 15px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; transition: all 0.2s ease; }
+        .pay-btn i { font-size: 1.5rem; color: var(--text-muted); transition: 0.2s; }
+        .pay-btn span { font-weight: 600; font-size: 0.9rem; color: var(--text-muted); }
+        .pay-btn:hover { border-color: #c7d2fe; background: #eff6ff; }
+        .pay-btn.active { border-color: var(--primary); background: #eef2ff; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.15); }
+        .pay-btn.active i, .pay-btn.active span { color: var(--primary); }
+        .receipt-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+        .receipt-header { background: #f9fafb; padding: 15px 25px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .summary-table { width: 100%; border-collapse: collapse; }
+        .summary-table th { text-align: left; color: var(--text-muted); font-weight: 500; font-size: 0.85rem; padding: 15px 25px; border-bottom: 1px solid var(--border); }
+        .summary-table td { padding: 12px 25px; font-size: 0.95rem; border-bottom: 1px solid #f3f4f6; }
+        .summary-table tr:last-child td { border-bottom: none; }
+        .totals-section { background: #f9fafb; padding: 25px; border-top: 1px dashed var(--border); }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 0.95rem; color: var(--text-muted); }
+        .grand-total-row { display: flex; justify-content: space-between; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+        .grand-total-row span:last-child { color: var(--primary); }
+        .submit-btn { width: 100%; margin-top: 25px; padding: 16px; background: var(--success); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3); display: flex; justify-content: center; align-items: center; gap: 10px; }
+        .submit-btn:hover { background: #059669; transform: translateY(-1px); }
+        .submit-btn:disabled { background: #9ca3af; cursor: not-allowed; transform: none; }
+    </style>
+</head>
+
+<body>
+
+<div class="checkout-container">
+
+    <div class="checkout-header">
+        <a href="/cashier-dashboard/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        <h2>Finalize Transaction</h2>
+    </div>
+
+    <div class="main-grid">
+
+        <div class="card">
+            <h3 class="card-title"><i class="fa-solid fa-user-tag"></i> Customer Details</h3>
+
+            <form method="POST" action="/generate-invoice/" id="checkout-form" onsubmit="handleFormSubmit(event, this)">
+                
+                {% csrf_token %}
+
+                <input type="hidden" name="razorpay_payment_id" id="razorpay_payment_id">
+                <input type="hidden" name="razorpay_order_id" id="razorpay_order_id">
+                <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+
+                <div class="form-group">
+                    <label>Customer Phone</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-phone"></i>
+                        <input type="tel" name="customer_phone" id="customer-phone-input" required class="form-control" placeholder="Search or Enter Number..." autocomplete="off">
+                    </div>
+                </div>
+                
+                <div id="customer-search-status"></div>
+
+                <div class="form-group">
+                    <label>Customer Name</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-user"></i>
+                        <input type="text" name="customer_name" id="customer-name-input" class="form-control" placeholder="Required for new customers">
+                    </div>
+                </div>
+
+                <h3 class="card-title" style="margin-top: 40px;"><i class="fa-solid fa-credit-card"></i> Payment Method</h3>
+
+                <div class="payment-grid">
+                    <button type="button" class="pay-btn active" onclick="selectPayment('cash')">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                        <span>Cash</span>
+                    </button>
+                    <button type="button" class="pay-btn" onclick="selectPayment('card')">
+                        <i class="fa-regular fa-credit-card"></i>
+                        <span>Card (External)</span>
+                    </button>
+                    <button type="button" class="pay-btn" onclick="selectPayment('upi')">
+                        <i class="fa-solid fa-qrcode"></i>
+                        <span>UPI / Online</span>
+                    </button>
+                </div>
+                
+                <input type="hidden" name="payment_method" id="payment_method" value="cash">
+
+                <button type="submit" class="submit-btn">
+                    <i class="fa-solid fa-file-invoice"></i> Generate Invoice & Print
+                </button>
+            </form>
+        </div>
+
+        <div class="receipt-card">
+            <div class="receipt-header">Order Summary</div>
+            <table class="summary-table">
+                <thead>
+                    <tr><th>Item</th><th style="text-align:center;">Qty</th><th style="text-align:right;">Price</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                    <tr>
+                        <td><div style="font-weight:600;">{{ item.product.product_name }}</div><small style="color:var(--text-muted)">{{ item.product.sku }}</small></td>
+                        <td style="text-align:center;">x{{ item.quantity }}</td>
+                        <td style="text-align:right;">₹{{ item.total_price }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="totals-section">
+                <div class="total-row"><span>Subtotal</span><span>₹{{ totals.sub_total }}</span></div>
+                <div class="total-row"><span>GST (Tax)</span><span>₹{{ totals.total_gst }}</span></div>
+                <div class="grand-total-row"><span>Total</span><span>₹{{ totals.grand_total }}</span></div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. PAYMENT METHOD SELECTION
+    // ==========================================
+    function selectPayment(method) {
+        document.getElementById("payment_method").value = method;
+        document.querySelectorAll(".pay-btn").forEach(btn => btn.classList.remove("active"));
+        document.querySelector(`.pay-btn[onclick="selectPayment('${method}')"]`).classList.add("active");
+    }
+
+    // ==========================================
+    // 2. SUCCESS SCREEN UI (The Fix)
+    // ==========================================
+    function showSuccessScreen(invoiceId) {
+        const container = document.querySelector('.main-grid');
+        const header = document.querySelector('.checkout-header');
+        
+        // 1. Hide the checkout form
+        container.style.display = 'none';
+        header.style.display = 'none';
+
+        // 2. Create Success Message
+        const successHTML = `
+            <div style="text-align: center; padding: 40px; background: white; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 500px; margin: 50px auto;">
+                <i class="fa-solid fa-circle-check" style="font-size: 60px; color: #10b981; margin-bottom: 20px;"></i>
+                <h2 style="margin-bottom: 10px;">Transaction Successful!</h2>
+                <p style="color: #6b7280; margin-bottom: 30px;">The invoice has been generated.</p>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <a href="/print-invoice/${invoiceId}/" target="_blank" class="submit-btn" style="background: #4f46e5; text-decoration: none;">
+                        <i class="fa-solid fa-print"></i> Print / Download Invoice
+                    </a>
+
+                    <a href="/cashier-dashboard/" class="submit-btn" style="background: white; color: #111827; border: 1px solid #e5e7eb; text-decoration: none;">
+                        <i class="fa-solid fa-arrow-right"></i> Next Customer
+                    </a>
+                </div>
+            </div>
+        `;
+
+        // 3. Inject into page
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = successHTML;
+        document.querySelector('.checkout-container').appendChild(wrapper);
+
+        // 4. Auto-trigger print (Attempt it, but if blocked, the button is there)
+        try {
+            document.querySelector('a[href*="print-invoice"]').click();
+        } catch(e) {
+            console.log("Auto-print blocked, user must click manually");
+        }
+    }
+
+    // ==========================================
+    // 3. CORE AJAX SUBMITTER
+    // ==========================================
+    async function submitTransactionData(formData, btn) {
+        try {
+            const response = await fetch("/generate-invoice/", {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.status === 'success') {
+                // Instead of redirecting, show the success screen
+                showSuccessScreen(data.invoice_id);
+            } else {
+                throw new Error(data.message || "Transaction failed");
+            }
+
+        } catch (error) {
+            console.error("Submission Error:", error);
+            alert("Error: " + error.message);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Generate Invoice & Print';
+        }
+    }
+
+    // ==========================================
+    // 4. MAIN FORM HANDLER
+    // ==========================================
+    async function handleFormSubmit(e, form) {
+        e.preventDefault(); 
+        
+        const paymentMethod = document.getElementById("payment_method").value;
+        const submitBtn = form.querySelector('.submit-btn');
+        const customerPhone = document.getElementById("customer-phone-input").value;
+
+        if (!customerPhone) {
+            alert("Please enter a customer phone number.");
+            return;
+        }
+
+        if (paymentMethod === 'upi') {
+            await startRazorpayPayment(form, submitBtn);
+        } else {
+            finalizeSubmission(form, submitBtn);
+        }
+    }
+
+    // ==========================================
+    // 5. CASH / EXTERNAL CARD LOGIC
+    // ==========================================
+    function finalizeSubmission(form, btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Processing...';
+        const formData = new FormData(form);
+        submitTransactionData(formData, btn);
+    }
+
+    // ==========================================
+    // 6. RAZORPAY LOGIC
+    // ==========================================
+    async function startRazorpayPayment(form, btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Starting Payment...';
+
+        try {
+            const csrf = document.querySelector("[name=csrfmiddlewaretoken]").value;
+            const res = await fetch("/start-payment/", { 
+                method: "POST", 
+                headers: { "X-CSRFToken": csrf } 
+            });
+            
+            if(!res.ok) throw new Error("Could not initialize payment");
+            const data = await res.json();
+
+            var options = {
+                "key": data.key,
+                "amount": data.amount,
+                "currency": "INR",
+                "name": data.name,
+                "description": data.description,
+                "order_id": data.order_id,
+                "handler": function (response){
+                    document.getElementById('razorpay_payment_id').value = response.razorpay_payment_id;
+                    document.getElementById('razorpay_order_id').value = response.razorpay_order_id;
+                    document.getElementById('razorpay_signature').value = response.razorpay_signature;
+
+                    btn.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Verifying Payment...';
+                    const formData = new FormData(form);
+                    submitTransactionData(formData, btn);
+                },
+                "prefill": {
+                    "contact": document.getElementById("customer-phone-input").value,
+                    "email": "guest@example.com"
+                },
+                "theme": { "color": "#4f46e5" },
+                "modal": {
+                    "ondismiss": function(){
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Generate Invoice & Print';
+                    }
+                }
+            };
+            
+            var rzp1 = new Razorpay(options);
+            rzp1.on('payment.failed', function (response){
+                alert("Payment Failed: " + response.error.description);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Generate Invoice & Print';
+            });
+
+            rzp1.open();
+
+        } catch (err) {
+            console.error(err);
+            alert("Error initiating payment system.");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-file-invoice"></i> Generate Invoice & Print';
+        }
+    }
+
+    // ==========================================
+    // 7. CUSTOMER LOOKUP
+    // ==========================================
+    const phoneInput = document.getElementById("customer-phone-input");
+    const nameInput = document.getElementById("customer-name-input");
+    const statusDiv = document.getElementById("customer-search-status");
+
+    phoneInput.addEventListener("keyup", async function() {
+        const phone = this.value;
+        if (phone.length < 10) {
+            statusDiv.classList.remove('visible');
+            return;
+        }
+        try {
+            const response = await fetch(`/customer-lookup/?phone=${phone}`);
+            const data = await response.json();
+            statusDiv.classList.add('visible');
+
+            if (data.found) {
+                phoneInput.value = data.phone; 
+                nameInput.value = data.name;
+                statusDiv.className = "found visible";
+                statusDiv.innerHTML = `<i class="fa-solid fa-check-circle"></i> <div><strong>Returning Customer</strong><br>${data.name}</div>`;
+            } else {
+                statusDiv.className = "not-found visible";
+                statusDiv.innerHTML = `<i class="fa-solid fa-user-plus"></i> <div><strong>New Customer</strong><br>Please enter their name below.</div>`;
+            }
+        } catch (error) { console.error(error); }
+    });
+</script>
+
+</body>
+</html>

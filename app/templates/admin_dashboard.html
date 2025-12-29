@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Billing System</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+    /* ---------------------------------------------------------------------
+       1. GLOBAL VARIABLES & RESET
+    ---------------------------------------------------------------------- */
+    :root {
+        --primary-color: #2C7A7B;
+        --primary-dark: #234E52;
+        --secondary-color: #F59E0B;
+        --accent-color: #EC4899;
+        --success-color: #10B981;
+        --danger-color: #EF4444;
+        --warning-color: #F59E0B;
+        
+        --dark-bg: #1A202C;
+        --darker-bg: #0F1419;
+        --light-text: #E5E7EB;
+        --border-color: #2D3748;
+        --card-bg: #1f2937; /* Consolidated card bg */
+        --hover-bg: #2D3748;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #0F1419 0%, #1A202C 100%);
+        color: var(--light-text);
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    /* ---------------------------------------------------------------------
+       2. SIDEBAR (FLEXBOX FIX)
+    ---------------------------------------------------------------------- */
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 260px;
+        height: 100vh;
+        background: var(--card-bg);
+        border-right: 1px solid var(--border-color);
+        z-index: 1000;
+        transition: transform 0.3s ease;
+        
+        /* ✅ FLEXBOX LAYOUT - Fixes the overlapping issue */
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        flex-shrink: 0; /* Header stays fixed size */
+    }
+
+    .sidebar-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    .sidebar-logo i {
+        font-size: 1.75rem;
+    }
+
+    /* Navigation Area - This part scrolls */
+    .sidebar-nav {
+        padding: 1rem 0;
+        flex-grow: 1; /* Takes up all available middle space */
+        overflow-y: auto; /* Scrolls if content is too long */
+        scrollbar-width: thin;
+        scrollbar-color: var(--border-color) transparent;
+    }
+
+    .sidebar-heading {
+        margin: 1.5rem 0 0.5rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #7f8c9e;
+        letter-spacing: 0.1em;
+    }
+
+    .nav-item {
+        margin: 0.25rem 0.75rem;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        color: var(--light-text);
+        text-decoration: none;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }
+
+    .nav-link:hover {
+        background: var(--hover-bg);
+        color: var(--primary-color);
+    }
+
+    .nav-link.active {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .nav-link i {
+        font-size: 1.25rem;
+        width: 1.5rem;
+        text-align: center;
+    }
+
+    /* Sidebar Footer - Stays at bottom naturally */
+    .sidebar-footer {
+        padding: 1.5rem;
+        border-top: 1px solid var(--border-color);
+        background: var(--card-bg);
+        flex-shrink: 0; /* Footer stays fixed size */
+        /* Removed position: absolute */
+    }
+
+    .logout-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 10px 16px;
+        border-radius: 10px;
+        background-color: #dc2626;
+        color: #ffffff;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.25s ease-in-out;
+        width: 100%; /* Full width */
+    }
+
+    .logout-btn:hover {
+        background-color: #b91c1c;
+        transform: scale(1.02);
+    }
+
+    /* ---------------------------------------------------------------------
+       3. MAIN CONTENT & TOP BAR
+    ---------------------------------------------------------------------- */
+    .main-content {
+        margin-left: 260px;
+        padding: 2rem;
+        min-height: 100vh;
+    }
+
+    .top-bar {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid var(--border-color);
+    }
+
+    .search-bar {
+        position: relative;
+        flex: 1;
+        max-width: 500px;
+    }
+
+    .search-bar input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 3rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-color);
+        background: var(--dark-bg);
+        color: var(--light-text);
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .search-bar input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(44, 122, 123, 0.1);
+    }
+
+    .search-bar i {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #9CA3AF;
+    }
+
+    .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: white;
+    }
+
+    /* ---------------------------------------------------------------------
+       4. STATS & CHARTS
+    ---------------------------------------------------------------------- */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        border: 1px solid var(--border-color);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    .stat-icon.primary { background: rgba(44, 122, 123, 0.2); color: var(--primary-color); }
+    .stat-icon.warning { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+    .stat-icon.success { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+    .stat-icon.danger { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: white;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: #9CA3AF;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    /* Chart Containers */
+    .chart-container {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        border: 1px solid var(--border-color);
+        margin-bottom: 2rem;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 300px; /* Fixed height for stability */
+    }
+
+    .chart-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    /* ---------------------------------------------------------------------
+       5. TABLES & BUTTONS
+    ---------------------------------------------------------------------- */
+    .section-content {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+    .section-content.active { display: block; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .table-container {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        margin-bottom: 2rem;
+    }
+
+    .table-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .table-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: white;
+    }
+
+    .btn-custom {
+        padding: 0.625rem 1.25rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .btn-primary-custom { background: var(--primary-color); color: white; }
+    .btn-primary-custom:hover { background: var(--primary-dark); transform: translateY(-1px); }
+
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .custom-table thead { background: var(--dark-bg); }
+    .custom-table th {
+        padding: 1rem 1.5rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .custom-table td {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid var(--border-color);
+        color: var(--light-text);
+    }
+    .custom-table tbody tr { transition: background 0.2s ease; }
+    .custom-table tbody tr:hover { background: var(--hover-bg); }
+
+    /* Actions & Icons */
+    .actions-cell { display: flex; justify-content: center; gap: 0.6rem; }
+    
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 1.2rem;
+        transition: all 0.2s ease;
+    }
+    .btn-edit { background-color: #059669; color: #ffffff; }
+    .btn-edit:hover { background-color: #047857; transform: scale(1.05); }
+    
+    .btn-delete { background-color: #dc2626; color: #ffffff; }
+    .btn-delete:hover { background-color: #b91c1c; transform: scale(1.05); }
+
+    /* Badges */
+    .badge-custom, .badge, .status-badge {
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: inline-block;
+    }
+    .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success-color); }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning-color); }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger-color); }
+    .badge-info { background: rgba(59, 130, 246, 0.2); color: #3B82F6; }
+
+    /* ---------------------------------------------------------------------
+       6. FORMS & MODALS
+    ---------------------------------------------------------------------- */
+    .form-group-custom { margin-bottom: 1.25rem; }
+    .form-label-custom { display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--light-text); }
+    
+    .form-control-custom, .form-select-custom {
+        width: 100%;
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+        background: var(--dark-bg);
+        color: var(--light-text);
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    .form-control-custom:focus, .form-select-custom:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(44, 122, 123, 0.1);
+    }
+    .message-wrapper {
+    margin-bottom: 1rem;
+}
+
+.message-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    border-left: 4px solid;
+    animation: fadeSlideIn 0.4s ease;
+    background: var(--card-bg);
+}
+
+/* SUCCESS */
+.message-box.success {
+    border-color: #10B981;
+    color: #10B981;
+    background: rgba(16, 185, 129, 0.15);
+}
+
+/* ERROR */
+.message-box.error {
+    border-color: #EF4444;
+    color: #EF4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+/* WARNING */
+.message-box.warning {
+    border-color: #F59E0B;
+    color: #F59E0B;
+    background: rgba(245, 158, 11, 0.15);
+}
+
+/* INFO */
+.message-box.info {
+    border-color: #3B82F6;
+    color: #3B82F6;
+    background: rgba(59, 130, 246, 0.15);
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+    .modal-custom {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-custom.show { display: flex; }
+
+    .modal-content-custom {
+        background: var(--card-bg);
+        border-radius: 1rem;
+        padding: 2rem;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header-custom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    .modal-title-custom { font-size: 1.5rem; font-weight: 600; color: white; }
+    
+    .close-btn {
+        background: none; border: none; color: var(--light-text);
+        font-size: 1.5rem; cursor: pointer; padding: 0;
+        width: 32px; height: 32px;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 0.375rem; transition: all 0.2s ease;
+    }
+    .close-btn:hover { background: var(--hover-bg); color: var(--danger-color); }
+
+    /* ---------------------------------------------------------------------
+       7. RESPONSIVE / MOBILE
+    ---------------------------------------------------------------------- */
+    .mobile-toggle {
+        display: none;
+        position: fixed;
+        top: 1rem; left: 1rem;
+        z-index: 1001;
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        color: var(--light-text);
+        cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+        .sidebar { transform: translateX(-100%); }
+        .sidebar.show { transform: translateX(0); }
+        .main-content { margin-left: 0; padding: 1rem; }
+        .stats-grid { grid-template-columns: 1fr; }
+        .top-bar { flex-direction: column; gap: 1rem; }
+        .search-bar { max-width: 100%; }
+        .mobile-toggle { display: block; }
+    }
+    
+    /* ---------------------------------------------------------------------
+       8. ALERTS
+    ---------------------------------------------------------------------- */
+    .alert-custom {
+        padding: 1rem 1.5rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1.5rem;
+        display: flex; align-items: center; gap: 1rem;
+        border-left: 4px solid;
+    }
+    .alert-warning-custom { background: rgba(245, 158, 11, 0.1); border-color: var(--warning-color); color: var(--warning-color); }
+    .alert-danger-custom { background: rgba(239, 68, 68, 0.1); border-color: var(--danger-color); color: var(--danger-color); }
+    
+    .filter-group { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .filter-item { display: flex; flex-direction: column; gap: 0.25rem; }
+    .filter-item label { font-size: 0.75rem; color: #9CA3AF; font-weight: 500; }
+    .filter-item select, .filter-item input {
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+        background: var(--dark-bg);
+        color: var(--light-text);
+        min-width: 150px;
+    }
+    canvas {
+    max-height: 300px !important;
+}
+
+html, body {
+    scroll-behavior: auto !important;
+}
+
+.chart-container {
+    overflow: hidden;
+}
+
+</style>
+</head>
+<body>
+    <button class="mobile-toggle" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">
+            <i class="bi bi-receipt-cutoff"></i>
+            <span>BillSys Admin</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-item">
+            <a href="#" class="nav-link active" data-section="dashboard">
+                <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="users">
+                <i class="bi bi-people"></i> <span>User Management</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="products">
+                <i class="bi bi-box-seam"></i> <span>Products</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="invoices">
+                <i class="bi bi-receipt"></i> <span>Invoices</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="stock">
+                <i class="bi bi-boxes"></i> <span>Stock Management</span>
+            </a>
+        </div>
+
+        <div class="sidebar-heading">Revenue Management</div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="profit">
+                <i class="bi bi-graph-up-arrow"></i> <span>Profit Report</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="margin">
+                <i class="bi bi-percent"></i> <span>Margin Report</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="sales">
+                <i class="bi bi-cart-check"></i> <span>Sales Report</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="stockreport">
+                <i class="bi bi-box"></i> <span>Stock Report</span>
+            </a>
+        </div>
+
+        <div class="nav-item">
+            <a href="#" class="nav-link" data-section="manufacturer">
+                <i class="bi bi-building"></i> <span>Manufacturer Report</span>
+            </a>
+        </div>
+    </nav> <div class="sidebar-footer">
+        <a href="{% url 'logout' %}" class="logout-btn">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</div>
+
+
+
+    <div class="main-content">
+        {% if messages %}
+<div class="message-wrapper">
+    {% for message in messages %}
+    <div class="message-box {{ message.tags }}">
+        {% if message.tags == 'success' %}
+            <i class="bi bi-check-circle"></i>
+        {% elif message.tags == 'error' %}
+            <i class="bi bi-x-circle"></i>
+        {% elif message.tags == 'warning' %}
+            <i class="bi bi-exclamation-triangle"></i>
+        {% else %}
+            <i class="bi bi-info-circle"></i>
+        {% endif %}
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+        <div class="top-bar">
+            <div class="search-bar">
+                <i class="bi bi-search"></i>
+                <input type="text" placeholder="Search..." id="globalSearch">
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">AD</div>
+                <div>
+                    <div style="font-weight: 600; font-size: 0.875rem;">Admin User</div>
+                    <div style="font-size: 0.75rem; color: #9CA3AF;">Administrator</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboard-section" class="section-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon primary">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">{{ total_users }}</div>
+
+                    <div class="stat-label">Total Customers</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon success">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">{{ total_products }}</div>
+
+                    <div class="stat-label">Total Products</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon warning">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">{{ total_invoices }}</div>
+
+                    <div class="stat-label">Total Invoices</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon success">
+                            <i class="bi bi-currency-dollar"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">₹{{ total_revenue }}</div>
+
+                    <div class="stat-label">Total Revenue</div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+    <div class="chart-header">
+        <div class="chart-title">Revenue Overview</div>
+        <select id="revenueTimeframe" class="form-select-custom">
+            <option value="7">Last 7 Days</option>
+            <option value="30" selected>Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+        </select>
+    </div>
+    <div class="chart-wrapper">
+        <canvas id="revenueChart"></canvas>
+    </div>
+</div>
+
+<div class="chart-grid">
+    <div class="chart-container">
+        <div class="chart-header">
+            <div class="chart-title">Sales by Category</div>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <div class="chart-header">
+            <div class="chart-title">Payment Methods</div>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="paymentChart"></canvas>
+        </div>
+    </div>
+</div>
+
+
+
+
+            <div id="lowStockAlert"></div>
+        </div>
+
+        <div id="users-section" class="section-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">User Management</div>
+                    <div class="table-actions">
+                        <button class="btn-custom btn-primary-custom" onclick="openAddUserModal()">
+                            <i class="bi bi-plus-circle"></i> Add User
+                        </button>
+                    </div>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+    {% for user in users %}
+        <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.profile.role|title }}</td>
+            <td>{{ user.profile.status|title }}</td>
+            <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+            <td class="actions-cell">
+    <a href="{% url 'edit_user' user.id %}" class="btn-icon btn-edit" title="Edit">
+        <i class="bi bi-pencil-square"></i>
+    </a>
+    <a href="{% url 'delete_user' user.id %}" class="btn-icon btn-delete" title="Delete"
+       onclick="return confirm('Are you sure you want to delete {{ user.username }}?');">
+        <i class="bi bi-trash-fill"></i>
+    </a>
+</td>
+
+        </tr>
+    {% empty %}
+        <tr><td colspan="6" class="text-center">No users found</td></tr>
+    {% endfor %}
+</tbody>
+
+                </table>
+            </div>
+        </div>
+
+        <div id="profit-section" class="section-content">
+    <h2 class="section-title">Profit Report</h2>
+    <canvas id="profitChart"></canvas>
+</div>
+
+<div id="margin-section" class="section-content">
+    <h2 class="section-title">Margin Report</h2>
+    <canvas id="marginChart"></canvas>
+</div>
+
+<div id="sales-section" class="section-content">
+    <h2 class="section-title">Sales Report</h2>
+    <canvas id="salesReportChart"></canvas>
+</div>
+
+<div id="stockreport-section" class="section-content">
+    <h2 class="section-title">Stock Report</h2>
+    <canvas id="stockReportChart"></canvas>
+</div>
+
+<div id="manufacturer-section" class="section-content">
+    <h2 class="section-title">Manufacturer Stock & Revenue</h2>
+    <canvas id="manufacturerChart"></canvas>
+</div>
+
+        <div id="products-section" class="section-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Product Management</div>
+                    <div class="table-actions">
+                        <div class="filter-group">
+                            <div class="filter-item">
+    <label>Category</label>
+    <select id="productCategoryFilter" class="form-select-custom">
+        <option value="">All Categories</option>
+        {% for value, label in categories %}
+            <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+                            <button class="btn-custom btn-primary-custom" onclick="openAddProductModal()">
+                                <i class="bi bi-plus-circle"></i> Add Product
+                            </button>
+                            <a href="/upload-products/" class="btn btn-primary">Upload Products JSON</a>
+
+                        </div>
+                    </div>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>product code</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody id="productsTableBody">
+    {% for product in products %}
+        <tr>
+            <td>{{ product.product_name }}</td>
+            <td>{{ product.product_code }}</td>
+            <td>{{ product.get_category_display }}</td>
+            <td>₹{{ product.price }}</td>
+            <td>{{ product.stock_quantity }}</td>
+            <td>
+                {% if product.status == 'active' %}
+                    <span class="badge badge-success">Active</span>
+                {% else %}
+                    <span class="badge badge-danger">Inactive</span>
+                {% endif %}
+            </td>
+            <td class="actions-cell">
+                <a href="{% url 'edit_product' product.id %}" class="btn-icon btn-edit" title="Edit">
+                    <i class="bi bi-pencil-square"></i>
+                </a>
+                <a href="{% url 'delete_product' product.id %}" class="btn-icon btn-delete" title="Delete"
+                   onclick="return confirm('Are you sure you want to delete {{ product.product_name }}?');">
+                    <i class="bi bi-trash-fill"></i>
+                </a>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="7" class="text-center">No products found</td></tr>
+    {% endfor %}
+</tbody>
+
+                </table>
+            </div>
+        </div>
+
+        <div id="invoices-section" class="section-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Invoices</div>
+                    <div class="table-actions">
+                        <div class="filter-group">
+                            <div class="filter-item">
+                                <label>Status</label>
+                                <select id="invoiceStatusFilter" class="form-select-custom">
+                                    <option value="">All Status</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                            <div class="filter-item">
+                                <label>Date Range</label>
+                                <input type="date" id="invoiceDateFrom" class="form-control-custom">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoicesTableBody">
+    {% for invoice in invoices %}
+        <tr>
+            <td>{{ invoice.invoice_number }}</td>
+
+            <td>
+                {% if invoice.customer %}
+                    {{ invoice.customer.name }}
+                {% else %}
+                    Walk-in Customer
+                {% endif %}
+            </td>
+
+            <td>₹ {{ invoice.grand_total }}</td>
+
+            <td>
+                {% if invoice.payment_method %}
+                    {{ invoice.payment_method }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+
+            <td>
+                <span class="status-badge {{ invoice.status }}">
+                    {{ invoice.status|title }}
+                </span>
+            </td>
+
+            <td>{{ invoice.created_at|date:"d-m-Y H:i" }}</td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="6" style="text-align:center; padding:20px;">
+                No invoices found.
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
+
+                </table>
+            </div>
+        </div>
+
+        <div id="stock-section" class="section-content">
+           {% if low_stock_products > 0 %}
+    <div class="alert-custom alert-warning-custom">
+        <i class="bi bi-exclamation-triangle" style="font-size: 1.5rem;"></i>
+        <div>
+            <strong>Stock Alert</strong><br>
+            {{ low_stock_products }} product(s) are running low on stock. Please restock.
+        </div>
+    </div>
+{% endif %}
+
+
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Stock Management</div>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Current Stock</th>
+                            <th>Threshold</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody">
+    {% for p in products %}
+        <tr>
+            <td>{{ p.product_name }}</td>
+            <td>{{ p.get_category_display }}</td>
+            <td>{{ p.stock_quantity }}</td>
+            <td>{{ p.low_stock_threshold }}</td>
+
+            <td>
+                {% if p.stock_quantity <= p.low_stock_threshold %}
+                    <span style="color: red; font-weight: bold;">Low Stock</span>
+                {% else %}
+                    <span style="color: green; font-weight: bold;">In Stock</span>
+                {% endif %}
+            </td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="5" style="text-align:center; padding:20px;">
+                No products found.
+            </td>
+        </tr>
+    {% endfor %}
+</tbody>
+
+                </table>
+            </div>
+        </div>
+
+        <div id="activity-section" class="section-content">
+            <div class="table-container">
+                <div class="table-header">
+                    <div class="table-title">Activity Logs</div>
+                    <div class="table-actions">
+                        <div class="filter-group">
+                            <div class="filter-item">
+                                <label>Action Type</label>
+                                <select id="activityTypeFilter" class="form-select-custom">
+                                    <option value="">All Actions</option>
+                                    <option value="create">Create</option>
+                                    <option value="update">Update</option>
+                                    <option value="delete">Delete</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Entity</th>
+                            <th>Description</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activityTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+<div id="addUserModal" class="modal-custom">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom">
+            <div class="modal-title-custom">Add New User</div>
+            <button class="close-btn" onclick="closeModal('addUserModal')">&times;</button>
+        </div>
+
+        
+        <form method="post" action="{% url 'add_user' %}">
+            {% csrf_token %}
+
+            {% if success %}
+                <div class="alert alert-success">{{ success }}</div>
+            {% endif %}
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+
+            <div class="form-group-custom">
+    <label class="form-label-custom">Full Name</label>
+    <input type="text" class="form-control-custom" name="full_name" placeholder="Enter full name" required>
+</div>
+
+
+            <div class="form-group-custom">
+                <label class="form-label-custom">User Name</label>
+                <input type="text" class="form-control-custom" name="username" placeholder="Enter User name" required>
+            </div>
+
+            <div class="form-group-custom">
+                <label class="form-label-custom">Email</label>
+                <input type="email" class="form-control-custom" name="email" placeholder="Enter email" required>
+            </div>
+
+            <div class="form-group-custom">
+                <label class="form-label-custom">Password</label>
+                <input type="password" class="form-control-custom" name="password" placeholder="Enter password" required>
+            </div>
+
+            <div class="form-group-custom">
+                <label class="form-label-custom">Role</label>
+                <select class="form-select-custom" name="role" required>
+                    <option value="">Select Role</option>
+                    <option value="manager">Manager</option>
+                    <option value="cashier">Cashier</option>
+                </select>
+            </div>
+
+            <div class="form-group-custom">
+                <label class="form-label-custom">Status</label>
+                <select class="form-select-custom" name="status" required>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+
+            <button type ="submit" class="btn-custom btn-primary-custom">
+                <i class="bi bi-plus-circle"></i> Add User
+            </button>
+
+        </form>
+    </div>
+</div>
+
+
+    <div id="addProductModal" class="modal-custom">
+        <div class="modal-content-custom">
+            <div class="modal-header-custom">
+                <div class="modal-title-custom" id="productModalTitle">Add New Product</div>
+                <button class="close-btn" onclick="closeModal('addProductModal')">&times;</button>
+            </div>
+            <form method="post" action="{% url 'add_product' %}">
+                {% csrf_token %}
+
+                <input type="hidden" name="product_id" id="editProductId">
+                <div class="form-group-custom">
+                    <label class="form-label-custom">Product Name</label>
+                    <input type="text" class="form-control-custom" name="name" required>
+                </div>
+               <div class="form-group-custom">
+    <label class="form-label-custom">Category</label>
+    <select class="form-select-custom" name="category" required>
+        <option value="">Select Category</option>
+        {% for value, label in categories %}
+            <option value="{{ value }}">{{ label }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+                <div class="form-group-custom">
+                    <label class="form-label-custom">Price</label>
+                    <input type="number" step="0.01" class="form-control-custom" name="price" required>
+                </div>
+                <div class="form-group-custom">
+    <label class="form-label-custom">Manufacturer</label>
+    <input type="text" class="form-control-custom" name="manufacturer">
+</div>
+
+<div class="form-group-custom">
+    <label class="form-label-custom">Cost Price</label>
+    <input type="number" step="0.01" class="form-control-custom" name="cost_price" required>
+</div>
+
+                <div class="form-group-custom">
+                    <label class="form-label-custom">Stock Quantity</label>
+                    <input type="number" class="form-control-custom" name="stock_quantity" required>
+                </div>
+                <div class="form-group-custom">
+                    <label class="form-label-custom">Low Stock Threshold</label>
+                    <input type="number" class="form-control-custom" name="low_stock_threshold" value="10" required>
+                </div>
+                <div class="form-group-custom">
+                    <label class="form-label-custom">Description</label>
+                    <textarea class="form-control-custom" name="description" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn-custom btn-primary-custom" style="width: 100%;">
+                    <i class="bi bi-check-circle"></i> <span id="productSubmitText">Add Product</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    /* -----------------------
+       GLOBAL STATE
+    -------------------------*/
+    let revenueChart = null;
+    let categoryChart = null;
+    let paymentChart = null;
+
+    // Report charts
+    window.profitChart = null;
+    window.marginChart = null;
+    window.salesChart = null;
+    window.stockChart = null;
+    window.manufacturerChart = null;
+
+    let allProducts = [];
+    let allInvoices = [];
+
+    /* -----------------------
+       SIDEBAR TOGGLE
+    -------------------------*/
+    window.toggleSidebar = function () {
+        const sb = document.getElementById("sidebar");
+        if (sb) sb.classList.toggle("show");
+    };
+
+    /* -----------------------
+       NAVIGATION SWITCHING
+    -------------------------*/
+    document.querySelectorAll(".nav-link").forEach(link => {
+        link.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+            this.classList.add("active");
+
+            const section = this.getAttribute("data-section");
+            document.querySelectorAll(".section-content").forEach(s => s.classList.remove("active"));
+
+            const targetSection = document.getElementById(section + "-section");
+            if (targetSection) targetSection.classList.add("active");
+
+            if (window.innerWidth <= 768) toggleSidebar();
+
+            // Call appropriate loader for section
+            if (section === "dashboard") loadDashboardData();
+            if (section === "profit") loadProfitReport();
+            if (section === "margin") loadMarginReport();
+            if (section === "sales") loadSalesReport();
+            if (section === "stockreport") loadStockReport();
+            if (section === "manufacturer") loadManufacturerReport();
+        });
+    });
+
+    /* -----------------------
+       CATEGORY FILTER (Products)
+    -------------------------*/
+    const categoryFilter = document.getElementById("productCategoryFilter");
+    const tableBody = document.getElementById("productsTableBody");
+    if (categoryFilter && tableBody) {
+        categoryFilter.addEventListener("change", function () {
+            fetch(`/filter-products/?category=${this.value}`)
+                .then(res => res.json())
+                .then(data => tableBody.innerHTML = data.html)
+                .catch(err => console.error("Category filter error:", err));
+        });
+    }
+
+    /* -----------------------
+       LOAD DASHBOARD DATA
+    -------------------------*/
+    async function loadDashboardData() {
+        try {
+            const [dashboardRes, productsRes, invoicesRes] = await Promise.all([
+                fetch("/api/dashboard/"),
+                fetch("/api/products/"),
+                fetch("/api/invoices/")
+            ]);
+
+            if (!dashboardRes.ok || !productsRes.ok || !invoicesRes.ok) {
+                console.error("One or more dashboard API calls failed");
+                return;
+            }
+
+            const dashboard = await dashboardRes.json();
+            allProducts = await productsRes.json();
+            allInvoices = await invoicesRes.json();
+
+            // update KPIs if present
+            if (document.getElementById("totalUsers")) document.getElementById("totalUsers").textContent = dashboard.totalUsers;
+            if (document.getElementById("totalProducts")) document.getElementById("totalProducts").textContent = dashboard.totalProducts;
+            if (document.getElementById("totalInvoices")) document.getElementById("totalInvoices").textContent = dashboard.totalInvoices;
+            if (document.getElementById("totalRevenue")) {
+                const val = typeof dashboard.totalRevenue === "number" ? dashboard.totalRevenue : parseFloat(dashboard.totalRevenue || 0);
+                document.getElementById("totalRevenue").textContent = val.toFixed(2);
+            }
+
+            initCharts();
+        } catch (err) {
+            console.error("Dashboard loading failed:", err);
+        }
+    }
+
+    /* -----------------------
+       INIT DASHBOARD CHARTS
+    -------------------------*/
+    function destroyIfExists(chartRef) {
+        try { if (chartRef && typeof chartRef.destroy === "function") chartRef.destroy(); } catch (e) { /* ignore */ }
+    }
+
+    function initCharts() {
+        // Destroy previous charts
+        destroyIfExists(revenueChart);
+        destroyIfExists(categoryChart);
+        destroyIfExists(paymentChart);
+
+        // Last 30 days array
+        const last30Days = Array.from({ length: 30 }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - (29 - i));
+            return d.toISOString().split("T")[0];
+        });
+
+        // Revenue per day
+        const revenueByDay = last30Days.map(date => {
+            const invoices = allInvoices.filter(inv => inv.created_at && inv.created_at.includes(date));
+            return invoices.reduce((sum, inv) => sum + parseFloat(inv.grand_total || 0), 0);
+        });
+
+        // Revenue chart
+        const revCanvas = document.getElementById("revenueChart");
+        if (revCanvas) {
+            revenueChart = new Chart(revCanvas.getContext("2d"), {
+                type: "line",
+                data: {
+                    labels: last30Days.map(d => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })),
+                    datasets: [{
+                        label: "Revenue",
+                        data: revenueByDay,
+                        borderColor: "#2C7A7B",
+                        backgroundColor: "rgba(44,122,123,0.15)",
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#374151' } }, y: { ticks: { color: '#374151' } } }
+                }
+            });
+        }
+
+        // Category doughnut
+        const categories = {};
+        allProducts.forEach(p => { if (p && p.category) categories[p.category] = (categories[p.category] || 0) + 1; });
+        const catCanvas = document.getElementById("categoryChart");
+        if (catCanvas) {
+            categoryChart = new Chart(catCanvas.getContext("2d"), {
+                type: "doughnut",
+                data: {
+                    labels: Object.keys(categories),
+                    datasets: [{
+                        data: Object.values(categories),
+                        backgroundColor: ['#2C7A7B', '#F59E0B', '#EC4899', '#10B981', '#3B82F6', '#6366F1'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+            });
+        }
+
+        // Payments bar
+        const paymentCounts = {};
+        allInvoices.forEach(inv => {
+            const method = inv.payment_method || 'Unknown';
+            paymentCounts[method] = (paymentCounts[method] || 0) + 1;
+        });
+        const payCanvas = document.getElementById("paymentChart");
+        if (payCanvas) {
+            paymentChart = new Chart(payCanvas.getContext("2d"), {
+                type: "bar",
+                data: {
+                    labels: Object.keys(paymentCounts),
+                    datasets: [{ label: "Transactions", data: Object.values(paymentCounts), backgroundColor: "#2C7A7B", borderRadius: 6 }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    }
+
+    /* -----------------------
+       REPORT LOADERS (GLOBAL)
+       — These must be global so nav can call them
+    -------------------------*/
+    async function loadProfitReport() {
+        try {
+            const res = await fetch("/api/report/profit/");
+            if (!res.ok) throw new Error("Profit API failed");
+            const data = await res.json();
+            const labels = data.map(d => d.product_name);
+            const values = data.map(d => parseFloat(d.total_profit || 0));
+
+            // destroy old instance
+            destroyIfExists(window.profitChart);
+
+            const canvas = document.getElementById("profitChart");
+            if (!canvas) return;
+            window.profitChart = new Chart(canvas.getContext("2d"), {
+                type: "bar",
+                data: { labels, datasets: [{ label: "Profit (₹)", data: values, backgroundColor: "#10B981" }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        } catch (err) { console.error("loadProfitReport error:", err); }
+    }
+
+    async function loadMarginReport() {
+        try {
+            const res = await fetch("/api/report/margin/");
+            if (!res.ok) throw new Error("Margin API failed");
+            const data = await res.json();
+            const labels = data.map(d => d.product_name);
+            const values = data.map(d => parseFloat(d.margin || 0));
+
+            destroyIfExists(window.marginChart);
+
+            const canvas = document.getElementById("marginChart");
+            if (!canvas) return;
+            window.marginChart = new Chart(canvas.getContext("2d"), {
+                type: "line",
+                data: { labels, datasets: [{ label: "Margin (%)", data: values, borderColor: "#F59E0B", tension: 0.35 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v => v + "%" } } } }
+            });
+        } catch (err) { console.error("loadMarginReport error:", err); }
+    }
+
+    async function loadSalesReport() {
+        try {
+            const res = await fetch("/api/report/sales/");
+            if (!res.ok) throw new Error("Sales API failed");
+            const data = await res.json();
+            const labels = data.map(d => d.product_name);
+            const values = data.map(d => parseInt(d.total_sold || 0));
+
+            destroyIfExists(window.salesChart);
+
+            const canvas = document.getElementById("salesReportChart");
+            if (!canvas) return;
+            window.salesChart = new Chart(canvas.getContext("2d"), {
+                type: "bar",
+                data: { labels, datasets: [{ label: "Units Sold", data: values, backgroundColor: "#3B82F6" }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        } catch (err) { console.error("loadSalesReport error:", err); }
+    }
+
+    async function loadStockReport() {
+        try {
+            const res = await fetch("/api/report/stock/");
+            if (!res.ok) throw new Error("Stock API failed");
+            const data = await res.json();
+            const labels = data.map(d => d.product_name);
+            const values = data.map(d => parseInt(d.stock_quantity || 0));
+
+            destroyIfExists(window.stockChart);
+
+            const canvas = document.getElementById("stockReportChart");
+            if (!canvas) return;
+            window.stockChart = new Chart(canvas.getContext("2d"), {
+                type: "bar",
+                data: { labels, datasets: [{ label: "Stock Qty", data: values, backgroundColor: "#6366F1" }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        } catch (err) { console.error("loadStockReport error:", err); }
+    }
+
+    async function loadManufacturerReport() {
+        try {
+            const res = await fetch("/api/report/manufacturer/");
+            if (!res.ok) throw new Error("Manufacturer API failed");
+            const data = await res.json();
+            const labels = data.map(d => d.manufacturer || "Unknown");
+            const values = data.map(d => parseFloat(d.stock_value || 0));
+
+            destroyIfExists(window.manufacturerChart);
+
+            const canvas = document.getElementById("manufacturerChart");
+            if (!canvas) return;
+            window.manufacturerChart = new Chart(canvas.getContext("2d"), {
+                type: "pie",
+                data: {
+                    labels,
+                    datasets: [{ data: values, backgroundColor: ['#2C7A7B', '#F59E0B', '#EC4899', '#10B981', '#3B82F6'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        } catch (err) { console.error("loadManufacturerReport error:", err); }
+    }
+
+    /* -----------------------
+       MODALS
+    -------------------------*/
+    window.openAddUserModal = function () {
+        const m = document.getElementById("addUserModal");
+        if (m) m.classList.add("show");
+        const form = document.getElementById("addUserForm");
+        if (form) form.reset();
+    };
+
+    window.openAddProductModal = function () {
+        const m = document.getElementById("addProductModal");
+        if (m) m.classList.add("show");
+        const form = document.getElementById("addProductForm");
+        if (form) form.reset();
+    };
+
+    window.closeModal = function (id) {
+        const m = document.getElementById(id);
+        if (m) m.classList.remove("show");
+    };
+
+    /* -----------------------
+       INITIAL LOAD
+    -------------------------*/
+    loadDashboardData();
+});
+setTimeout(() => {
+    document.querySelectorAll('.message-box').forEach(msg => {
+        msg.style.opacity = "0";
+        msg.style.transform = "translateY(-10px)";
+        setTimeout(() => msg.remove(), 300);
+    });
+}, 3000);
+
+</script>
+
+
+
+</body>
+</html>

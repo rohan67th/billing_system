@@ -1,0 +1,202 @@
+                <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product - {{ product.product_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        /* ... Insert your Global Root and CSS Variables here ... */
+        /* Or link to your external stylesheet */
+        
+        body {
+            background: linear-gradient(135deg, #0F1419 0%, #1A202C 100%);
+            color: #E5E7EB;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .edit-card {
+            background: #1f2937; /* var(--card-bg) */
+            border: 1px solid #374151; /* var(--border-color) */
+            border-radius: 1rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #2C7A7B; /* var(--primary-color) */
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #374151;
+            padding-bottom: 1rem;
+        }
+
+        /* Reuse your form styles */
+        .form-group-custom { margin-bottom: 1.25rem; }
+        .form-label-custom { display: block; margin-bottom: 0.5rem; font-weight: 500; color: #E5E7EB; }
+        
+        .form-control-custom, .form-select-custom {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #374151;
+            background: #0F1419; /* var(--darker-bg) */
+            color: #E5E7EB;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .form-control-custom:focus, .form-select-custom:focus {
+            border-color: #2C7A7B;
+            box-shadow: 0 0 0 3px rgba(44, 122, 123, 0.1);
+        }
+
+        .form-control-custom:read-only {
+            background: #1A202C;
+            color: #6B7280;
+            cursor: not-allowed;
+        }
+
+        .btn-container {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: flex-end;
+        }
+
+        .btn-custom {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary { background: #2C7A7B; color: white; }
+        .btn-primary:hover { background: #234E52; }
+
+        .btn-secondary { background: #4B5563; color: white; }
+        .btn-secondary:hover { background: #374151; }
+    </style>
+</head>
+<body>
+
+    <div class="edit-card">
+        <h1 class="page-title">
+            <i class="bi bi-pencil-square"></i> Edit Product
+        </h1>
+
+        <form method="POST" action="">
+            {% csrf_token %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Product Name</label>
+                        <input type="text" class="form-control-custom" name="name" value="{{ product.product_name }}" required>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Product Code</label>
+                        <input type="text" class="form-control-custom" name="product_code" value="{{ product.product_code }}" readonly title="Product code cannot be changed">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Category</label>
+                        <select class="form-select-custom" name="category" required>
+                            {% for value, label in categories %}
+                                <option value="{{ value }}" {% if product.category == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Manufacturer</label>
+                        <input type="text" class="form-control-custom" name="manufacturer" value="{{ product.manufacturer|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Selling Price (₹)</label>
+                        <input type="number" step="0.01" class="form-control-custom" name="price" value="{{ product.price }}" required>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Cost Price (₹)</label>
+                        <input type="number" step="0.01" class="form-control-custom" name="cost_price" value="{{ product.cost_price }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Stock Quantity</label>
+                        <input type="number" class="form-control-custom" name="stock_quantity" value="{{ product.stock_quantity }}" required>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-group-custom">
+                        <label class="form-label-custom">Low Stock Alert At</label>
+                        <input type="number" class="form-control-custom" name="low_stock_threshold" value="{{ product.low_stock_threshold }}" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group-custom">
+                <label class="form-label-custom">Description</label>
+                <textarea class="form-control-custom" name="description" rows="3">{{ product.description|default:'' }}</textarea>
+            </div>
+
+            <div class="form-group-custom">
+                <label class="form-label-custom">Status</label>
+                <select class="form-select-custom" name="status">
+                    <option value="active" {% if product.status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if product.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+
+            <div class="btn-container">
+                <a href="{% url 'admin_dashboard' %}" class="btn-custom btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn-custom btn-primary">
+                    <i class="bi bi-save"></i> Update Product
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+</body>
+</html>

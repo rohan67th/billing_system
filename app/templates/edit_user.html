@@ -1,0 +1,25 @@
+<h2>Edit User</h2>
+
+<form method="post" action="{% url 'edit_user' user_obj.id %}">
+    {% csrf_token %}
+
+    <label>Username:</label>
+    <input type="text" name="username" value="{{ user_obj.username }}" required><br>
+
+    <label>Email:</label>
+    <input type="email" name="email" value="{{ user_obj.email }}" required><br>
+
+    <label>Role:</label>
+    <select name="role" required>
+        <option value="manager" {% if profile.role == "manager" %}selected{% endif %}>Manager</option>
+        <option value="cashier" {% if profile.role == "cashier" %}selected{% endif %}>Cashier</option>
+    </select><br>
+
+    <label>Status:</label>
+    <select name="status" required>
+        <option value="active" {% if profile.status == "active" %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if profile.status == "inactive" %}selected{% endif %}>Inactive</option>
+    </select><br>
+
+    <button type="submit">Save Changes</button>
+</form>
